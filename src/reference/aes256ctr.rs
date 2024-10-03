@@ -666,62 +666,6 @@ fn br_aes_ct64_ctr_init(sk_exp: &mut [u64], key: &[u8]) {
     br_aes_ct64_skey_expand(sk_exp, &skey);
 }
 
-#[cfg(not(feature = "90s-fixslice"))]
-fn br_aes_ct64_ctr_run(
-    sk_exp: &mut [u64],
-    iv: &[u8],
-    cc: u32,
-    data: &mut [u8],
-    mut len: usize,
-) {
-    let mut ivw = [0u32; 16];
-    br_range_dec32le(&mut ivw, 3, iv);
-    let mut slice = [0u32; 3];
-    slice.copy_from_slice(&ivw[0..3]);
-    ivw[4..7].copy_from_slice(&slice);
-    ivw[8..11].copy_from_slice(&slice);
-    ivw[12..15].copy_from_slice(&slice);
-    ivw[3] = br_swap32(cc);
-    ivw[7] = br_swap32(cc + 1);
-    ivw[11] = br_swap32(cc + 2);
-    ivw[15] = br_swap32(cc + 3);
-
-    let mut idx = 0;
-    while len > 64 {
-        aes_ctr4x(&mut data[idx..], &mut ivw, sk_exp);
-        idx += 64;
-        len -= 64;
-    }
-    if len > 0 {
-        let mut tmp = [0u8; 64];
-        aes_ctr4x(&mut tmp, &mut ivw, sk_exp);
-        data[idx..].copy_from_slice(&tmp[..len])
-    }
-}
-
-/// Name:  aes256_prf
-///
-/// Description: AES256 stream generation in CTR mode using 32-bit counter,
-///  nonce is zero-padded to 12 bytes, counter starts at zero
-///
-/// Arguments:   - [u8] output:  output
-///  - usize outlen:  length of requested output in bytes
-///  - const [u8] key:   32-byte key
-///  - const u8  nonce:  1-byte nonce (will be zero-padded to 12 bytes)
-#[cfg(not(feature = "90s-fixslice"))]
-pub(crate) fn aes256ctr_prf(
-    output: &mut [u8],
-    outlen: usize,
-    key: &[u8],
-    nonce: u8,
-) {
-    let mut sk_exp = [0u64; 120];
-    let mut pad_nonce = [0u8; 12];
-    pad_nonce[0] = nonce;
-    br_aes_ct64_ctr_init(&mut sk_exp, key);
-    br_aes_ct64_ctr_run(&mut sk_exp, &pad_nonce, 0, output, outlen);
-}
-
 /// Name:  aes256ctr_init
 ///
 /// Description: AES256 CTR used as a replacement for a XOF; this function

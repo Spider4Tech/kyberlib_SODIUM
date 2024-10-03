@@ -196,7 +196,7 @@ mod tests {
             kyberlib_uake_client_init!(&bob_keys.public, &mut rng)
                 .unwrap();
 
-        assert_eq!(client_init.len(), 2272);
+        assert_eq!(client_init.len(), 3136);
     }
 
     #[test]
@@ -213,7 +213,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(server_send.len(), 1088);
+        assert_eq!(server_send.len(), 1568);
     }
 
     #[test]
@@ -245,7 +245,7 @@ mod tests {
             kyberlib_ake_client_init!(&bob_keys.public, &mut rng)
                 .unwrap();
 
-        assert_eq!(client_init.len(), 2272);
+        assert_eq!(client_init.len(), 3136);
     }
 
     #[test]
@@ -264,7 +264,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(server_send.len(), 2176);
+        assert_eq!(server_send.len(), 3136);
     }
 
     #[test]

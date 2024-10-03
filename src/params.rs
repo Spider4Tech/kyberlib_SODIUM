@@ -34,22 +34,9 @@ pub const KYBER_N: usize = 256;
 /// The size in bytes of the polynomials used in Kyber, derived from the parameter N.
 pub const KYBER_POLY_BYTES: usize = 384;
 
-/// Compressed byte size of the polynomial for Kyber variants except Kyber1024.
-///
-/// - Determines how data is compacted when not using Kyber1024.
-#[cfg(not(feature = "kyber1024"))]
-pub const KYBER_POLY_COMPRESSED_BYTES: usize = 128;
-
 /// The byte size of the vector of polynomials in Kyber, calculated from the security parameter and KYBER_POLY_BYTES.
 pub const KYBER_POLYVEC_BYTES: usize =
     KYBER_SECURITY_PARAMETER * KYBER_POLY_BYTES;
-
-/// Compressed byte size of the polynomial vector for Kyber variants except Kyber1024.
-///
-/// - This setting affects data compression in non-Kyber1024 configurations.
-#[cfg(not(feature = "kyber1024"))]
-pub const KYBER_POLYVEC_COMPRESSED_BYTES: usize =
-    KYBER_SECURITY_PARAMETER * 320;
 
 /// The modulus Q used in the Kyber scheme.
 ///

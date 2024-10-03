@@ -32,8 +32,8 @@ pub(crate) fn polyvec_compress(r: &mut [u8], a: Polyvec) {
                 for (k, t_k) in t.iter_mut().enumerate() {
                     *t_k = a.vec[i].coeffs[8 * j + k] as u16;
                     *t_k = t_k.wrapping_add(
-                        ((((*t_k as i16) >> 15) & KYBER_Q as i16)
-                            as u16),
+                        (((*t_k as i16) >> 15) & KYBER_Q as i16)
+                            as u16,
                     );
                     let mut tmp: u64 =
                         ((*t_k as u64) << 11) + (KYBER_Q as u64 / 2);
@@ -53,33 +53,6 @@ pub(crate) fn polyvec_compress(r: &mut [u8], a: Polyvec) {
                 r[idx + 9] = ((t[6] >> 6) | (t[7] << 5)) as u8;
                 r[idx + 10] = (t[7] >> 3) as u8;
                 idx += 11
-            }
-        }
-    }
-
-    #[cfg(not(feature = "kyber1024"))]
-    {
-        let mut t = [0u16; 4];
-        let mut idx = 0usize;
-        for i in 0..KYBER_SECURITY_PARAMETER {
-            for j in 0..KYBER_N / 4 {
-                for (k, t_k) in t.iter_mut().enumerate() {
-                    *t_k = a.vec[i].coeffs[4 * j + k] as u16;
-                    *t_k = t_k.wrapping_add(
-                        (((*t_k as i16) >> 15) & KYBER_Q as i16) as u16,
-                    );
-                    let mut tmp: u64 =
-                        ((*t_k as u64) << 10) + (KYBER_Q as u64 / 2);
-                    tmp *= 20642679;
-                    tmp >>= 36;
-                    *t_k = (tmp as u16) & 0x3ff;
-                }
-                r[idx] = (t[0]) as u8;
-                r[idx + 1] = ((t[0] >> 8) | (t[1] << 2)) as u8;
-                r[idx + 2] = ((t[1] >> 6) | (t[2] << 4)) as u8;
-                r[idx + 3] = ((t[2] >> 4) | (t[3] << 6)) as u8;
-                r[idx + 4] = (t[3] >> 2) as u8;
-                idx += 5;
             }
         }
     }
@@ -123,31 +96,6 @@ pub(crate) fn polyvec_decompress(r: &mut Polyvec, a: &[u8]) {
                         (((t[k] & 0x7FF) as u32 * KYBER_Q as u32
                             + 1024)
                             >> 11) as i16;
-                }
-            }
-        }
-    }
-
-    #[cfg(not(feature = "kyber1024"))]
-    {
-        let mut idx = 0usize;
-        let mut t = [0u16; 4];
-        for i in 0..KYBER_SECURITY_PARAMETER {
-            for j in 0..KYBER_N / 4 {
-                t[0] = (a[idx]) as u16 | (a[idx + 1] as u16) << 8;
-                t[1] =
-                    (a[idx + 1] >> 2) as u16 | (a[idx + 2] as u16) << 6;
-                t[2] =
-                    (a[idx + 2] >> 4) as u16 | (a[idx + 3] as u16) << 4;
-                t[3] =
-                    (a[idx + 3] >> 6) as u16 | (a[idx + 4] as u16) << 2;
-                idx += 5;
-
-                for (k, item) in t.iter().enumerate() {
-                    r.vec[i].coeffs[4 * j + k] =
-                        ((((*item as u32) & 0x3FF) * KYBER_Q as u32
-                            + 512)
-                            >> 10) as i16;
                 }
             }
         }

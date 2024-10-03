@@ -42,29 +42,12 @@ mod tests {
         assert_eq!(KYBER_POLY_BYTES, 384);
     }
 
-    #[cfg(not(feature = "kyber1024"))]
-    #[test]
-    fn test_kyber_poly_compressed_bytes() {
-        // Test KYBER_POLY_COMPRESSED_BYTES for non-kyber1024
-        assert_eq!(KYBER_POLY_COMPRESSED_BYTES, 128);
-    }
-
     #[test]
     fn test_kyber_polyvec_bytes() {
         // Test KYBER_POLYVEC_BYTES
         assert_eq!(
             KYBER_POLYVEC_BYTES,
             KYBER_SECURITY_PARAMETER * KYBER_POLY_BYTES
-        );
-    }
-
-    #[cfg(not(feature = "kyber1024"))]
-    #[test]
-    fn test_kyber_polyvec_compressed_bytes() {
-        // Test KYBER_POLYVEC_COMPRESSED_BYTES for non-kyber1024
-        assert_eq!(
-            KYBER_POLYVEC_COMPRESSED_BYTES,
-            KYBER_SECURITY_PARAMETER * 320
         );
     }
 
