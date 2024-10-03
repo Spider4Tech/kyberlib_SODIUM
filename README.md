@@ -1,30 +1,4 @@
-<!-- markdownlint-disable MD033 MD041 -->
-
-<img
-src="https://kura.pro/kyberlib/images/logos/kyberlib.webp"
-align="right"
-alt="kyberlib's logo"
-height="261"
-width="261"
-/>
-
-<!-- markdownlint-enable MD033 MD041 -->
-
 # kyberlib
-
-A Robust Rust Library for CRYSTALS-Kyber Post-Quantum Cryptography.
-
-<!-- markdownlint-disable MD033 MD041 -->
-<center>
-<!-- markdownlint-enable MD033 MD041 -->
-
-[![Made With Love][made-with-rust]][05] [![Crates.io][crates-badge]][07] [![Lib.rs][libs-badge]][09] [![Docs.rs][docs-badge]][08] [![License][license-badge]][02] [![Codecov][codecov-badge]][15]
-
-• [Website][00] • [Documentation][08] • [Report Bug][03] • [Request Feature][03] • [Contributing Guidelines][04]
-
-<!-- markdownlint-disable MD033 MD041 -->
-</center>
-<!-- markdownlint-enable MD033 MD041 -->
 
 ![divider][divider]
 
@@ -263,53 +237,3 @@ Apache License (Version 2.0).
 
 See [LICENSE-APACHE][01] and [LICENSE-MIT][02] for details.
 
-## Contribution 🤝
-
-We welcome all people who want to contribute. Please see the
-[contributing instructions][04] for more information.
-
-Contributions in any form (issues, pull requests, etc.) to this project
-must adhere to the [Rust's Code of Conduct][11].
-
-Unless you explicitly state otherwise, any contribution intentionally
-submitted for inclusion in the work by you, as defined in the
-Apache-2.0 license, shall be dual licensed as above, without any
-additional terms or conditions.
-
-## Acknowledgements 💙
-
-A big thank you to all the awesome contributors of [kyberlib][05] for their
-help and support.
-
-This repo is a fork of the innovative Rust implementation of the Kyber
-post-quantum KEM from [Argyle-Software/kyber][14]. We are deeply grateful for
-the inspiration and contribution of the original project, which has provided a
-solid foundation for our work and study. Thank you! You can find the original
-repo [here][14].
-
-A special thank you goes to the [Rust Reddit][12] community for
-providing a lot of useful suggestions on how to improve this project.
-
-[00]: https://kyberlib.com/ "KyberLib, A Robust Rust Library for CRYSTALS-Kyber Post-Quantum Cryptography"
-[01]: http://opensource.org/licenses/Apache-2.0 "Apache License, Version 2.0"
-[02]: http://opensource.org/licenses/MIT "MIT License"
-[03]: https://github.com/sebastienrousseau/kyberlib/kyberlib/issues "KyberLib Issues"
-[04]: https://github.com/sebastienrousseau/kyberlib/kyberlib/blob/main/CONTRIBUTING.md "KyberLib Contributing Guidelines"
-[05]: https://github.com/sebastienrousseau/kyberlib/kyberlib/graphs/contributors "KyberLib Contributors"
-[06]: http://semver.org/ "SemVer"
-[07]: https://crates.io/crates/kyberlib "KyberLib on Crates.io"
-[08]: https://docs.rs/kyberlib "KyberLib on Docs.rs"
-[09]: https://lib.rs/crates/kyberlib "KyberLib on Lib.rs"
-[11]: https://www.rust-lang.org/policies/code-of-conduct "KyberLib Code of Conduct"
-[12]: https://www.reddit.com/r/rust/ "Reddit"
-[13]: https://www.rust-lang.org/learn/get-started "Rust"
-[14]: https://github.com/Argyle-Software/kyber "Kyber from Argyle-Software"
-[15]: https://codecov.io/gh/sebastienrousseau/kyberlib "Codecov"
-
-[crates-badge]: https://img.shields.io/crates/v/kyberlib.svg?style=for-the-badge 'Crates.io'
-[codecov-badge]: https://img.shields.io/codecov/c/github/sebastienrousseau/kyberlib?style=for-the-badge&token=oEisyTucB5 'Codecov'
-[divider]: https://kura.pro/common/images/elements/divider.svg "divider"
-[docs-badge]: https://img.shields.io/docsrs/kyberlib.svg?style=for-the-badge 'Docs.rs'
-[libs-badge]: https://img.shields.io/badge/lib.rs-v0.0.6-orange.svg?style=for-the-badge 'Lib.rs'
-[license-badge]: https://img.shields.io/crates/l/kyberlib.svg?style=for-the-badge 'License'
-[made-with-rust]: https://img.shields.io/badge/rust-f04041?style=for-the-badge&labelColor=c0282d&logo=rust 'Made With Rust'
