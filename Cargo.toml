@@ -40,7 +40,7 @@ pqc_core = { version = "0.3.0", features = ["zero"]}
 rand = { version = "0.8.5", default-features = false, features = ["getrandom"] }
 rand_core = { version = "0.6.4",  default-features = false }
 rlg = "0.0.5"
-sha2 = { version = "0.10.8", optional = true }
+blake3 = { version = "1.5.4", optional = true }
 tokio = { version = "1.40.0", optional = true }
 wasm-bindgen = "0.2.93"
 zeroize = { version = "1.7.0", features = ["derive"] }
@@ -72,10 +72,12 @@ path = "src/lib.rs"
 ### Security Levels ###
 # Defaults to "kyber768" if none selected
 # Will throw a compile-time error if more than one level is chosen
-default = ["kyber768"]
+default = ["kyber1024", "rand/std", "90s-fixslice"]
 # kyber512 = []
 kyber768 = []
-# kyber1024 = []
+kyber1024 = []
+90s = ["blake3"]
+90s-fixslice = ["90s", "aes", "ctr"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -83,15 +85,6 @@ all-features = true
 ### Export IND-CPA primitives
 # **WARNING** use with caution
 hazmat = []
-
-### Additional features ###
-# 90s mode uses AES256-CTR and SHA2 as primitives instead
-# Uses a bitslice implementation
-90s = ["sha2"]
-
-# Fixslice RustCrypto AES implementation offers some additional sidechannel
-# attack resistance. Suggest benchmarking for comparison.
-90s-fixslice = ["90s", "aes", "ctr"]
 
 # Use avx2 intrinsics on x86 architectures
 # Wont compile if the platform doesn't support it

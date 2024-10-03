@@ -6,9 +6,6 @@
 #[cfg(feature = "90s")]
 use crate::aes256ctr::*;
 
-#[cfg(feature = "90s")]
-use sha2::{Digest, Sha256, Sha512};
-
 #[cfg(feature = "90s-fixslice")]
 use aes::cipher::{
     generic_array::GenericArray, KeyIvInit, StreamCipher,
@@ -56,19 +53,23 @@ impl KeccakState {
 /// Computes SHA2-256 hash in 90s mode
 #[cfg(feature = "90s")]
 pub fn hash_h(out: &mut [u8], input: &[u8], inlen: usize) {
-    let mut hasher = Sha256::new();
+    let mut hasher = blake3::Hasher::new();
     hasher.update(&input[..inlen]);
     let digest = hasher.finalize();
-    out[..digest.len()].copy_from_slice(&digest);
+
+    let digest_bytes = digest.as_bytes();
+    out[..digest_bytes.len()].copy_from_slice(digest_bytes)
 }
 
 /// Computes SHA2-512 hash in 90s mode
 #[cfg(feature = "90s")]
 pub fn hash_g(out: &mut [u8], input: &[u8], inlen: usize) {
-    let mut hasher = Sha512::new();
+    let mut hasher = blake3::Hasher::new();
     hasher.update(&input[..inlen]);
     let digest = hasher.finalize();
-    out[..digest.len()].copy_from_slice(&digest);
+
+    let digest_bytes = digest.as_bytes();
+    out[..digest_bytes.len()].copy_from_slice(digest_bytes)
 }
 
 /// Absorbs input data into the XOF state in 90s mode
@@ -108,8 +109,10 @@ pub fn prf(out: &mut [u8], _outbytes: usize, key: &[u8], nonce: u8) {
 /// Key derivation function (KDF) in 90s mode
 #[cfg(feature = "90s")]
 pub fn kdf(out: &mut [u8], input: &[u8], inlen: usize) {
-    let mut hasher = Sha256::new();
+    let mut hasher = blake3::Hasher::new();
     hasher.update(&input[..inlen]);
     let digest = hasher.finalize();
-    out[..digest.len()].copy_from_slice(&digest);
+
+    let digest_bytes = digest.as_bytes();
+    out[..digest_bytes.len()].copy_from_slice(digest_bytes)
 }
