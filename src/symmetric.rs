@@ -11,7 +11,7 @@ use aes::cipher::{
     generic_array::GenericArray, KeyIvInit, StreamCipher,
 };
 #[cfg(feature = "90s-fixslice")]
-type Aes256Ctr = ctr::Ctr32BE<aes::Aes256>;
+type XChaCha20Poly1305 = sodiumoxide::crypto::aead::xchacha20poly1305_ietf;
 
 /// Block size for AES256CTR in bytes.
 #[cfg(feature = "90s")]
