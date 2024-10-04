@@ -76,7 +76,7 @@ default = ["kyber1024", "rand/std", "90s-fixslice"]
 kyber768 = []
 kyber1024 = []
 90s = ["blake3"]
-90s-fixslice = ["90s", "sodiumoxide", "ctr"]
+90s-fixslice = ["90s", "sodiumoxide"]
 
 [package.metadata.docs.rs]
 all-features = true

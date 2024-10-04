@@ -1,17 +1,11 @@
 // Copyright © 2024 kyberlib. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(dead_code)]
-
-#[cfg(feature = "90s")]
-use crate::aes256ctr::*;
+use sodiumoxide::crypto::secretbox;
+use crate::reference::aes256ctr::{aes256ctr_init, aes256ctr_squeezeblocks, Aes256CtrCtx};
 
 #[cfg(feature = "90s-fixslice")]
-use aes::cipher::{
-    generic_array::GenericArray, KeyIvInit, StreamCipher,
-};
-#[cfg(feature = "90s-fixslice")]
-type XChaCha20Poly1305 = sodiumoxide::crypto::aead::xchacha20poly1305_ietf;
+type _XChaCha20Poly1305 = sodiumoxide::crypto::aead::xchacha20poly1305_ietf::Key;
 
 /// Block size for AES256CTR in bytes.
 #[cfg(feature = "90s")]
@@ -94,16 +88,19 @@ pub fn xof_squeezeblocks(
 /// Pseudo-random function (PRF) in 90s mode
 #[cfg(feature = "90s")]
 pub fn prf(out: &mut [u8], _outbytes: usize, key: &[u8], nonce: u8) {
-    #[cfg(feature = "90s-fixslice")]
-    {
-        // RustCrypto fixslice
-        let mut expnonce = [0u8; 16];
-        expnonce[0] = nonce;
-        let key = GenericArray::from_slice(key);
-        let iv = GenericArray::from_slice(&expnonce);
-        let mut cipher = Aes256Ctr::new(key, iv);
-        cipher.apply_keystream(out)
-    }
+
+    let key = secretbox::Key::from_slice(key).expect("Key must be 32 bytes");
+
+    //nonce de 24 octets, en utilisant le nonce fourni
+    let mut expnonce = [0u8; secretbox::NONCEBYTES];
+    expnonce[0] = nonce; // Utilisez le nonce fourni
+    let nonce = secretbox::Nonce::from_slice(&expnonce).expect("Nonce must be 24 bytes");
+
+
+    let ciphertext = secretbox::seal(out, &nonce, &key);
+    let truncated_ciphertext = &ciphertext[..ciphertext.len() - 16];
+
+    out.copy_from_slice(truncated_ciphertext);
 }
 
 /// Key derivation function (KDF) in 90s mode

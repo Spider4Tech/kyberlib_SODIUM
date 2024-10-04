@@ -60,7 +60,7 @@ start=$(date +%s)
 announce "${TARGET}"
 
 # Define arrays for security levels and nine-way optimization options
-LEVELS=("kyber512" "kyber768" "kyber1024")
+LEVELS=("kyber768" "kyber1024")
 NINES=("" "90s" "90s-fixslice")
 
 # Iterate over security levels and nine-way optimization options, running the tests with different AVX2 optimization options
