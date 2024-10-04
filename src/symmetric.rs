@@ -1,17 +1,10 @@
 // Copyright © 2024 kyberlib. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#![allow(dead_code)]
-
-#[cfg(feature = "90s")]
-use crate::aes256ctr::*;
+use sodiumoxide::crypto::{secretbox, stream};
 
 #[cfg(feature = "90s-fixslice")]
-use aes::cipher::{
-    generic_array::GenericArray, KeyIvInit, StreamCipher,
-};
-#[cfg(feature = "90s-fixslice")]
-type Aes256Ctr = ctr::Ctr32BE<aes::Aes256>;
+type _XChaCha20Poly1305 = sodiumoxide::crypto::aead::xchacha20poly1305_ietf::Key;
 
 /// Block size for AES256CTR in bytes.
 #[cfg(feature = "90s")]
@@ -19,7 +12,7 @@ pub const AES256CTR_BLOCKBYTES: usize = 64;
 
 /// Block size for XOF (Extendable Output Function) in bytes.
 #[cfg(feature = "90s")]
-pub const XOF_BLOCKBYTES: usize = AES256CTR_BLOCKBYTES;
+pub const XOF_BLOCKBYTES: usize = 64;
 
 /// Type alias for the XOF (Extendable Output Function) state in 90s mode.
 #[cfg(feature = "90s")]
@@ -75,11 +68,26 @@ pub fn hash_g(out: &mut [u8], input: &[u8], inlen: usize) {
 /// Absorbs input data into the XOF state in 90s mode
 #[cfg(feature = "90s")]
 pub fn xof_absorb(state: &mut XofState, input: &[u8], x: u8, y: u8) {
-    let mut nonce = [0u8; 12];
+    use sodiumoxide::crypto::stream::{Key, Nonce};
+    
+    sodiumoxide::init().expect("Sodium initialization failed");
+    
+    let mut nonce = [0u8; 8];
     nonce[0] = x;
     nonce[1] = y;
-    aes256ctr_init(state, input, nonce);
+    
+    let key = Key::from_slice(input).expect("Invalid key length");
+    
+    let nonce = Nonce::from_slice(&nonce).expect("Invalid nonce length");
+    
+    let mut stream = stream::stream_xor(input, &nonce,&key);
+    
+    let mut output = vec![0u8; input.len()];
+
+    // Mettre à jour l'état avec les données transformées
+    state.update(&output);
 }
+
 
 /// Squeezes XOF data into output in 90s mode
 #[cfg(feature = "90s")]
@@ -94,16 +102,19 @@ pub fn xof_squeezeblocks(
 /// Pseudo-random function (PRF) in 90s mode
 #[cfg(feature = "90s")]
 pub fn prf(out: &mut [u8], _outbytes: usize, key: &[u8], nonce: u8) {
-    #[cfg(feature = "90s-fixslice")]
-    {
-        // RustCrypto fixslice
-        let mut expnonce = [0u8; 16];
-        expnonce[0] = nonce;
-        let key = GenericArray::from_slice(key);
-        let iv = GenericArray::from_slice(&expnonce);
-        let mut cipher = Aes256Ctr::new(key, iv);
-        cipher.apply_keystream(out)
-    }
+
+    let key = secretbox::Key::from_slice(key).expect("Key must be 32 bytes");
+
+    //nonce de 24 octets, en utilisant le nonce fourni
+    let mut expnonce = [0u8; secretbox::NONCEBYTES];
+    expnonce[0] = nonce; // Utilisez le nonce fourni
+    let nonce = secretbox::Nonce::from_slice(&expnonce).expect("Nonce must be 24 bytes");
+
+
+    let ciphertext = secretbox::seal(out, &nonce, &key);
+    let truncated_ciphertext = &ciphertext[..ciphertext.len() - 16];
+
+    out.copy_from_slice(truncated_ciphertext);
 }
 
 /// Key derivation function (KDF) in 90s mode
