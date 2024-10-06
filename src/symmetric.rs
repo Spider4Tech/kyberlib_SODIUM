@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use sodiumoxide::crypto::{secretbox, stream};
+use crate::nacl::Naclx;
+use crate::aes::Aes256CtrCtx;
+use sodiumoxide::crypto::stream::{Key, Nonce};
 
-#[cfg(feature = "90s-fixslice")]
 type _XChaCha20Poly1305 = sodiumoxide::crypto::aead::xchacha20poly1305_ietf::Key;
 
 /// Block size for AES256CTR in bytes.
@@ -67,9 +69,7 @@ pub fn hash_g(out: &mut [u8], input: &[u8], inlen: usize) {
 
 /// Absorbs input data into the XOF state in 90s mode
 #[cfg(feature = "90s")]
-pub fn xof_absorb(state: &mut XofState, input: &[u8], x: u8, y: u8) {
-    use sodiumoxide::crypto::stream::{Key, Nonce};
-    
+pub fn xof_absorb(state: &mut XofState, input: &[u8], x: u8, y: u8) {    
     sodiumoxide::init().expect("Sodium initialization failed");
     
     let mut nonce = [0u8; 8];
@@ -96,7 +96,22 @@ pub fn xof_squeezeblocks(
     outblocks: usize,
     state: &mut XofState,
 ) {
-    aes256ctr_squeezeblocks(out, outblocks, state);
+    let key = &state.key; // Assurez-vous que `XofState` contient une clé de 32 bytes
+    let nonce = &state.nonce; // Assurez-vous que `XofState` contient un nonce de 24 bytes
+
+    use sodiumoxide::crypto::stream;
+
+    let mut stream = stream::new(key, nonce);
+
+    for i in 0..outblocks {
+        let start = i * 64;
+        let end = start + 64;
+        if end <= out.len() {
+            stream.apply_keystream(&mut out[start..end]);
+        } else {
+            break;
+        }
+    }
 }
 
 /// Pseudo-random function (PRF) in 90s mode
