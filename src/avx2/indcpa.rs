@@ -158,7 +158,7 @@ fn gen_matrix(a: &mut [Polyvec], seed: &[u8], transposed: bool) {
             } else {
                 xof_absorb(&mut state, seed, j as u8, i as u8);
             }
-            xof_squeezeblocks(&mut buf, GEN_MATRIX_NBLOCKS, &mut state);
+            xof_squeeze(&mut buf, GEN_MATRIX_NBLOCKS, &mut state);
             buflen = GEN_MATRIX_NBLOCKS * XOF_BLOCKBYTES;
             ctr = rej_uniform(
                 &mut item.vec[j].coeffs,
@@ -172,7 +172,7 @@ fn gen_matrix(a: &mut [Polyvec], seed: &[u8], transposed: bool) {
                 for k in 0..off {
                     buf[k] = buf[buflen - off + k];
                 }
-                xof_squeezeblocks(&mut buf[off..], 1, &mut state);
+                xof_squeeze(&mut buf[off..], 1, &mut state);
                 buflen = off + XOF_BLOCKBYTES;
                 ctr += rej_uniform(
                     &mut item.vec[j].coeffs[ctr..],

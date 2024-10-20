@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use sodiumoxide::crypto::{secretbox, stream};
+use crate::nacl::Naclx;
+// use crate::aes::Aes256CtrCtx;
+use sodiumoxide::crypto::stream::Key;
 
-#[cfg(feature = "90s-fixslice")]
 type _XChaCha20Poly1305 = sodiumoxide::crypto::aead::xchacha20poly1305_ietf::Key;
 
 /// Block size for AES256CTR in bytes.
@@ -16,7 +18,7 @@ pub const XOF_BLOCKBYTES: usize = 64;
 
 /// Type alias for the XOF (Extendable Output Function) state in 90s mode.
 #[cfg(feature = "90s")]
-pub type XofState = Aes256CtrCtx;
+pub type XofState = Naclx;
 
 /// Keccak state for absorbing data
 #[derive(Copy, Clone, Debug, Default)]
@@ -67,36 +69,33 @@ pub fn hash_g(out: &mut [u8], input: &[u8], inlen: usize) {
 
 /// Absorbs input data into the XOF state in 90s mode
 #[cfg(feature = "90s")]
-pub fn xof_absorb(state: &mut XofState, input: &[u8], x: u8, y: u8) {
-    use sodiumoxide::crypto::stream::{Key, Nonce};
-    
+pub fn xof_absorb(state: &mut XofState, _input: &[u8], _x: u8, _y: u8) {    
     sodiumoxide::init().expect("Sodium initialization failed");
     
-    let mut nonce = [0u8; 8];
-    nonce[0] = x;
-    nonce[1] = y;
-    
-    let key = Key::from_slice(input).expect("Invalid key length");
-    
-    let nonce = Nonce::from_slice(&nonce).expect("Invalid nonce length");
-    
-    let mut stream = stream::stream_xor(input, &nonce,&key);
-    
-    let mut output = vec![0u8; input.len()];
+    let _key = Key::from_slice(_input).expect("Invalid key length");
 
     // Mettre à jour l'état avec les données transformées
-    state.update(&output);
+    //TODO Implémenter correctement le nonce en cul lait deux ta rasse
+    state.nonce = stream::gen_nonce();
 }
-
 
 /// Squeezes XOF data into output in 90s mode
 #[cfg(feature = "90s")]
-pub fn xof_squeezeblocks(
+pub fn xof_squeeze(
     out: &mut [u8],
-    outblocks: usize,
     state: &mut XofState,
 ) {
-    aes256ctr_squeezeblocks(out, outblocks, state);
+    sodiumoxide::init().expect("Sodium initialization failed");
+
+    let key = Key::from_slice(&state.sk_exp).expect("Invalid key length");
+
+    stream::stream_xor_inplace(out, &state.nonce, &key);
+
+    let out_copy= &mut vec![];
+
+    out.clone_into( out_copy);
+
+    out.copy_from_slice(&out_copy[..out_copy.len()]);
 }
 
 /// Pseudo-random function (PRF) in 90s mode
@@ -112,7 +111,7 @@ pub fn prf(out: &mut [u8], _outbytes: usize, key: &[u8], nonce: u8) {
 
 
     let ciphertext = secretbox::seal(out, &nonce, &key);
-    let truncated_ciphertext = &ciphertext[..ciphertext.len() - 16];
+    let truncated_ciphertext = &ciphertext[..ciphertext.len() - 16]; //TODO à modifier an cul lait
 
     out.copy_from_slice(truncated_ciphertext);
 }

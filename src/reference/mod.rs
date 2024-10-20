@@ -6,3 +6,4 @@ pub(crate) mod poly;
 pub(crate) mod polyvec;
 pub(crate) mod reduce;
 pub(crate) mod verify;
+pub(crate) mod nacl;
