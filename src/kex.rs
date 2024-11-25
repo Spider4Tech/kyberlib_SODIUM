@@ -27,9 +27,9 @@ pub type Encapsulated = Result<
 pub type Decapsulated =
     Result<[u8; KYBER_SHARED_SECRET_BYTES], KyberLibError>;
 /// Kyber public key
-pub type PublicKey = [u8; KYBER_PUBLIC_KEY_BYTES];
+// pub type PublicKey = [u8; KYBER_PUBLIC_KEY_BYTES];
 /// Kyber secret key
-pub type SecretKey = [u8; KYBER_SECRET_KEY_BYTES];
+// pub type SecretKey = [u8; KYBER_SECRET_KEY_BYTES];
 /// Kyber Shared Secret
 pub type SharedSecret = [u8; KYBER_SHARED_SECRET_BYTES];
 /// Bytes to send when initiating a unilateral key exchange

@@ -4,13 +4,16 @@
 use crate::{
     error::KyberLibError,
     kem::*,
-    kex::{Decapsulated, Encapsulated, PublicKey, SecretKey},
+    kex::{Decapsulated, Encapsulated/* , PublicKey, SecretKey */},
     params::*,
     CryptoRng, RngCore,
 };
-use pqc_core::zero;
+
+// use pqc_core::zero;
 #[cfg(feature = "zeroize")]
 use zeroize::{Zeroize, ZeroizeOnDrop};
+
+use sodiumoxide::{crypto::box_::{self, PublicKey, SecretKey}, init};
 
 /// Generate a key pair for Kyber encryption with a provided RNG.
 ///
@@ -36,12 +39,17 @@ pub fn keypair<R>(rng: &mut R) -> Result<Keypair, KyberLibError>
 where
     R: RngCore + CryptoRng,
 {
-    let mut public = [0u8; KYBER_PUBLIC_KEY_BYTES];
-    let mut secret = [0u8; KYBER_SECRET_KEY_BYTES];
-    generate_key_pair(&mut public, &mut secret, rng, None)?;
-    let keys = Keypair { public, secret };
-    zero!(secret);
-    Ok(keys)
+    // let mut public = [0u8; KYBER_PUBLIC_KEY_BYTES];
+    // let mut secret = [0u8; KYBER_SECRET_KEY_BYTES];
+
+    // generate_key_pair(&mut public, &mut secret, rng, None)?;
+    // let keys = Keypair { public, secret };
+    // zero!(secret);
+    // Ok(keys)
+
+    init().map_err(|_| "Failed to initialize sodiumoxide")?;
+    let (pk, sk) = box_::gen_keypair();
+    Ok(Keypair { public: pk, secret: sk })
 }
 
 /// Verify that given secret and public key matches and put them in
@@ -58,8 +66,10 @@ where
 /// # Ok(())}
 /// ```
 pub fn keypairfrom<R>(
-    public: &mut [u8; KYBER_PUBLIC_KEY_BYTES],
-    secret: &mut [u8; KYBER_SECRET_KEY_BYTES],
+    // public: &mut [u8; KYBER_PUBLIC_KEY_BYTES],
+    // secret: &mut [u8; KYBER_SECRET_KEY_BYTES],
+    public: &mut PublicKey,
+    secret: &mut SecretKey,
     rng: &mut R,
 ) -> Result<Keypair, KyberLibError>
 where
@@ -68,6 +78,7 @@ where
     //Try to encapsulate and decapsulate to verify secret key matches public key
     let (ciphertext, shared_secret) = encapsulate(public, rng)?;
     let expected_shared_secret = decapsulate(&ciphertext, secret)?;
+
     //If it does match, return a KeyPair
     if expected_shared_secret == shared_secret {
         let public2 = *public;
@@ -112,15 +123,17 @@ where
 /// let (ciphertext, shared_secret) = encapsulate(&keys.public, &mut rng)?;
 /// # Ok(())}
 /// ```
-pub fn encapsulate<R>(pk: &[u8], rng: &mut R) -> Encapsulated
+pub fn encapsulate<R>(pk: /*&[u8]*/ &PublicKey, rng: &mut R) -> Encapsulated
 where
     R: CryptoRng + RngCore,
 {
-    if pk.len() != KYBER_PUBLIC_KEY_BYTES {
-        return Err(KyberLibError::InvalidInput);
-    }
+    // if pk.len() != KYBER_PUBLIC_KEY_BYTES {
+    //     return Err(KyberLibError::InvalidInput);
+    // }
+
     let mut ct = [0u8; KYBER_CIPHERTEXT_BYTES];
     let mut ss = [0u8; KYBER_SHARED_SECRET_BYTES];
+
     encrypt_message(&mut ct, &mut ss, pk, rng, None)?;
     Ok((ct, ss))
 }
@@ -149,12 +162,12 @@ where
 /// assert_eq!(ss1, ss2);
 /// #  Ok(())}
 /// ```
-pub fn decapsulate(ct: &[u8], sk: &[u8]) -> Decapsulated {
-    if ct.len() != KYBER_CIPHERTEXT_BYTES
-        || sk.len() != KYBER_SECRET_KEY_BYTES
-    {
-        return Err(KyberLibError::InvalidInput);
-    }
+pub fn decapsulate(ct: &[u8], sk: &SecretKey) -> Decapsulated {
+    // if ct.len() != KYBER_CIPHERTEXT_BYTES
+    //     || sk.len() != KYBER_SECRET_KEY_BYTES
+    // {
+    //     return Err(KyberLibError::InvalidInput);
+    // }
     let mut ss = [0u8; KYBER_SHARED_SECRET_BYTES];
     decrypt_message(&mut ss, ct, sk);
     Ok(ss)
@@ -172,79 +185,79 @@ pub struct Keypair {
     pub secret: SecretKey,
 }
 
-impl Keypair {
-    /// Securely generates a new keypair.
-    ///
-    /// This function generates a new Kyber key pair and returns it as a `Keypair` struct.
-    ///
-    /// # Arguments
-    ///
-    /// * `rng` - The random number generator implementing the `RngCore` and `CryptoRng` traits.
-    ///
-    /// ### Example
-    /// ```
-    /// # use kyberlib::*;
-    /// # fn main() -> Result<(), KyberLibError> {
-    /// let mut rng = rand::thread_rng();
-    /// let keys = Keypair::generate(&mut rng)?;
-    /// # let empty_keys = Keypair{
-    ///   public: [0u8; KYBER_PUBLIC_KEY_BYTES], secret: [0u8; KYBER_SECRET_KEY_BYTES]
-    /// };
-    /// # assert!(empty_keys != keys);
-    /// # Ok(()) }
-    /// ```
-    pub fn generate<R: CryptoRng + RngCore>(
-        rng: &mut R,
-    ) -> Result<Keypair, KyberLibError> {
-        keypair(rng)
-    }
+// impl Keypair {
+//     /// Securely generates a new keypair.
+//     ///
+//     /// This function generates a new Kyber key pair and returns it as a `Keypair` struct.
+//     ///
+//     /// # Arguments
+//     ///
+//     /// * `rng` - The random number generator implementing the `RngCore` and `CryptoRng` traits.
+//     ///
+//     /// ### Example
+//     /// ```
+//     /// # use kyberlib::*;
+//     /// # fn main() -> Result<(), KyberLibError> {
+//     /// let mut rng = rand::thread_rng();
+//     /// let keys = Keypair::generate(&mut rng)?;
+//     /// # let empty_keys = Keypair{
+//     ///   public: [0u8; KYBER_PUBLIC_KEY_BYTES], secret: [0u8; KYBER_SECRET_KEY_BYTES]
+//     /// };
+//     /// # assert!(empty_keys != keys);
+//     /// # Ok(()) }
+//     /// ```
+//     pub fn generate<R: CryptoRng + RngCore>(
+//         rng: &mut R,
+//     ) -> Result<Keypair, KyberLibError> {
+//         keypair(rng)
+//     }
 
-    /// Explicitly exposes the secret key
-    ///```
-    /// use kyberlib::*;
-    ///
-    /// let mut rng = rand::thread_rng();
-    /// let keys = Keypair::generate(&mut rng);
-    /// let binding = keys.expect("Exposed secret key");
-    /// let secret = binding.expose_secret();
-    /// assert!(secret.len() == KYBER_SECRET_KEY_BYTES);
-    /// assert!(secret.len() != 0);
-    /// ```
-    pub fn expose_secret(&self) -> &SecretKey {
-        &self.secret
-    }
+//     /// Explicitly exposes the secret key
+//     ///```
+//     /// use kyberlib::*;
+//     ///
+//     /// let mut rng = rand::thread_rng();
+//     /// let keys = Keypair::generate(&mut rng);
+//     /// let binding = keys.expect("Exposed secret key");
+//     /// let secret = binding.expose_secret();
+//     /// assert!(secret.len() == KYBER_SECRET_KEY_BYTES);
+//     /// assert!(secret.len() != 0);
+//     /// ```
+//     pub fn expose_secret(&self) -> &SecretKey {
+//         &self.secret
+//     }
 
-    /// Imports a keypair from existing public and secret key arrays.
-    ///
-    /// This function imports a keypair from existing public and secret key arrays and returns it as a `Keypair` struct.
-    ///
-    /// # Arguments
-    ///
-    /// * `public` - A mutable reference to a `[u8; KYBER_PUBLIC_KEY_BYTES]` array representing the public key.
-    /// * `secret` - A mutable reference to a `[u8; KYBER_SECRET_KEY_BYTES]` array representing the secret key.
-    /// * `rng` - The random number generator implementing the `RngCore` and `CryptoRng` traits.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use kyberlib::*;
-    /// # fn main() -> Result<(), KyberLibError> {
-    /// let mut rng = rand::thread_rng();
-    /// let keys = keypair(&mut rng)?;
-    /// let mut public_key = keys.public;
-    /// let mut secret_key = keys.secret;
-    /// let keys = Keypair::import(&mut public_key, &mut secret_key, &mut rng)?;
-    /// let _ = Keypair::import(&mut public_key, &mut secret_key, &mut rng)?;
-    /// # Ok(()) }
-    /// ```
-    pub fn import<R: CryptoRng + RngCore>(
-        public: &mut [u8; KYBER_PUBLIC_KEY_BYTES],
-        secret: &mut [u8; KYBER_SECRET_KEY_BYTES],
-        rng: &mut R,
-    ) -> Result<Keypair, KyberLibError> {
-        keypairfrom(public, secret, rng)
-    }
-}
+//     /// Imports a keypair from existing public and secret key arrays.
+//     ///
+//     /// This function imports a keypair from existing public and secret key arrays and returns it as a `Keypair` struct.
+//     ///
+//     /// # Arguments
+//     ///
+//     /// * `public` - A mutable reference to a `[u8; KYBER_PUBLIC_KEY_BYTES]` array representing the public key.
+//     /// * `secret` - A mutable reference to a `[u8; KYBER_SECRET_KEY_BYTES]` array representing the secret key.
+//     /// * `rng` - The random number generator implementing the `RngCore` and `CryptoRng` traits.
+//     ///
+//     /// # Example
+//     ///
+//     /// ```
+//     /// # use kyberlib::*;
+//     /// # fn main() -> Result<(), KyberLibError> {
+//     /// let mut rng = rand::thread_rng();
+//     /// let keys = keypair(&mut rng)?;
+//     /// let mut public_key = keys.public;
+//     /// let mut secret_key = keys.secret;
+//     /// let keys = Keypair::import(&mut public_key, &mut secret_key, &mut rng)?;
+//     /// let _ = Keypair::import(&mut public_key, &mut secret_key, &mut rng)?;
+//     /// # Ok(()) }
+//     /// ```
+//     pub fn import<R: CryptoRng + RngCore>(
+//         public: &mut [u8; KYBER_PUBLIC_KEY_BYTES],
+//         secret: &mut [u8; KYBER_SECRET_KEY_BYTES],
+//         rng: &mut R,
+//     ) -> Result<Keypair, KyberLibError> {
+//         keypairfrom(public, secret, rng)
+//     }
+// }
 
 struct DummyRng {}
 

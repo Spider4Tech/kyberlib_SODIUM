@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use sodiumoxide::crypto::{secretbox, stream};
-use crate::nacl::Naclx;
 // use crate::aes::Aes256CtrCtx;
 use sodiumoxide::crypto::stream::Key;
+
+use crate::nacl::Naclx;
+
 
 type _XChaCha20Poly1305 = sodiumoxide::crypto::aead::xchacha20poly1305_ietf::Key;
 
@@ -48,23 +50,22 @@ impl KeccakState {
 /// Computes SHA2-256 hash in 90s mode
 #[cfg(feature = "90s")]
 pub fn hash_h(out: &mut [u8], input: &[u8], inlen: usize) {
-    let mut hasher = blake3::Hasher::new();
-    hasher.update(&input[..inlen]);
-    let digest = hasher.finalize();
-
-    let digest_bytes = digest.as_bytes();
-    out[..digest_bytes.len()].copy_from_slice(digest_bytes)
+    let hash = blake3::hash(&input[..inlen]);
+    let hash_bytes = hash.as_bytes();
+    out[..hash_bytes.len()].copy_from_slice(hash_bytes);
 }
 
 /// Computes SHA2-512 hash in 90s mode
 #[cfg(feature = "90s")]
-pub fn hash_g(out: &mut [u8], input: &[u8], inlen: usize) {
+pub fn hash_g(out: &mut [u8], input: &[u8], inlen: usize) {    
     let mut hasher = blake3::Hasher::new();
     hasher.update(&input[..inlen]);
-    let digest = hasher.finalize();
 
-    let digest_bytes = digest.as_bytes();
-    out[..digest_bytes.len()].copy_from_slice(digest_bytes)
+    let mut output = [0u8; 64];
+
+    hasher.finalize_xof().fill(&mut output);
+
+    out.copy_from_slice(&output[..out.len()]);
 }
 
 /// Absorbs input data into the XOF state in 90s mode
@@ -124,5 +125,6 @@ pub fn kdf(out: &mut [u8], input: &[u8], inlen: usize) {
     let digest = hasher.finalize();
 
     let digest_bytes = digest.as_bytes();
-    out[..digest_bytes.len()].copy_from_slice(digest_bytes)
+
+    out[..digest_bytes.len()].copy_from_slice(digest_bytes);
 }

@@ -4,6 +4,7 @@
 // Import necessary modules
 use kyberlib::*;
 use rand::rngs::OsRng;
+use sodiumoxide::crypto::box_;
 
 // Unit tests module
 #[cfg(test)]
@@ -127,15 +128,19 @@ mod tests {
     fn test_keypairfrom() {
         // Initialize a random number generator
         let mut rng = OsRng;
+
         // Generate keypair
         let keypair = keypair(&mut rng).unwrap();
+        
         // Create mutable references to the public and secret keys
         let mut public_key = keypair.public;
         let mut secret_key = keypair.secret;
+        
         // Create keypair using keypairfrom
         let new_keypair =
             keypairfrom(&mut public_key, &mut secret_key, &mut rng)
                 .unwrap();
+
         // Assert equality of the new keypair and the original keypair
         assert_eq!(new_keypair.public, keypair.public);
         assert_eq!(new_keypair.secret, keypair.secret);

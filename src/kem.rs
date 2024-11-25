@@ -6,6 +6,7 @@ use crate::{
     symmetric::*, verify::*,
 };
 use rand_core::{CryptoRng, RngCore};
+use sodiumoxide::crypto::{box_::{PublicKey, SecretKey}, sealedbox};
 
 /// Generates a public and private key pair for CCA-secure Kyber key encapsulation mechanism.
 ///
@@ -19,35 +20,35 @@ use rand_core::{CryptoRng, RngCore};
 /// # Errors
 ///
 /// Returns a `KyberLibError` on failure.
-pub fn generate_key_pair<R>(
-    pk: &mut [u8],
-    sk: &mut [u8],
-    _rng: &mut R,
-    _seed: Option<(&[u8], &[u8])>,
-) -> Result<(), KyberLibError>
-where
-    R: RngCore + CryptoRng,
-{
-    const PK_START: usize =
-        KYBER_SECRET_KEY_BYTES - (2 * KYBER_SYM_BYTES);
-    const SK_START: usize = KYBER_SECRET_KEY_BYTES - KYBER_SYM_BYTES;
-    const END: usize =
-        KYBER_INDCPA_PUBLIC_KEY_BYTES + KYBER_INDCPA_SECRET_KEY_BYTES;
+// pub fn generate_key_pair<R>(
+//     pk: &mut [u8],
+//     sk: &mut [u8],
+//     _rng: &mut R,
+//     _seed: Option<(&[u8], &[u8])>,
+// ) -> Result<(), KyberLibError>
+// where
+//     R: RngCore + CryptoRng,
+// {
+//     const PK_START: usize =
+//         KYBER_SECRET_KEY_BYTES - (2 * KYBER_SYM_BYTES);
+//     const SK_START: usize = KYBER_SECRET_KEY_BYTES - KYBER_SYM_BYTES;
+//     const END: usize =
+//         KYBER_INDCPA_PUBLIC_KEY_BYTES + KYBER_INDCPA_SECRET_KEY_BYTES;
 
-    indcpa_keypair(pk, sk, _seed, _rng)?;
+//     indcpa_keypair(pk, sk, _seed, _rng)?;
 
-    sk[KYBER_INDCPA_SECRET_KEY_BYTES..END]
-        .copy_from_slice(&pk[..KYBER_INDCPA_PUBLIC_KEY_BYTES]);
-    hash_h(&mut sk[PK_START..], pk, KYBER_PUBLIC_KEY_BYTES);
+//     sk[KYBER_INDCPA_SECRET_KEY_BYTES..END]
+//         .copy_from_slice(&pk[..KYBER_INDCPA_PUBLIC_KEY_BYTES]);
+//     hash_h(&mut sk[PK_START..], pk, KYBER_PUBLIC_KEY_BYTES);
 
-    if let Some(s) = _seed {
-        sk[SK_START..].copy_from_slice(s.1);
-    } else {
-        randombytes(&mut sk[SK_START..], KYBER_SYM_BYTES, _rng)?;
-    }
+//     if let Some(s) = _seed {
+//         sk[SK_START..].copy_from_slice(s.1);
+//     } else {
+//         randombytes(&mut sk[SK_START..], KYBER_SYM_BYTES, _rng)?;
+//     }
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 /// Generates cipher text and a shared secret for a given public key.
 ///
@@ -65,7 +66,7 @@ where
 pub fn encrypt_message<R>(
     ct: &mut [u8],
     ss: &mut [u8],
-    pk: &[u8],
+    pk: PublicKey,
     _rng: &mut R,
     _seed: Option<&[u8]>,
 ) -> Result<(), KyberLibError>
@@ -87,11 +88,15 @@ where
     hash_h(&mut buf, &randbuf, KYBER_SYM_BYTES);
 
     // Multitarget countermeasure for coins + contributory KEM
-    hash_h(&mut buf[KYBER_SYM_BYTES..], pk, KYBER_PUBLIC_KEY_BYTES);
+    hash_h(&mut buf[KYBER_SYM_BYTES..], pk.as_ref(), KYBER_PUBLIC_KEY_BYTES);
     hash_g(&mut kr, &buf, 2 * KYBER_SYM_BYTES);
 
     // Coins are in kr[KYBER_SYM_BYTES..]
-    indcpa_enc(ct, &buf, pk, &kr[KYBER_SYM_BYTES..]);
+    // indcpa_enc(ct, &buf, pk, &kr[KYBER_SYM_BYTES..]);
+
+    // TODO implement with sodiumoxide
+    let sealed = sealedbox::seal(&buf, &pk);
+    ct.copy_from_slice(&sealed);
 
     // Overwrite coins in kr with H(c)
     hash_h(&mut kr[KYBER_SYM_BYTES..], ct, KYBER_CIPHERTEXT_BYTES);
@@ -111,7 +116,7 @@ where
 /// * `sk` - Input private key (an already allocated array of CRYPTO_SECRETKEYBYTES bytes).
 ///
 /// On failure, `ss` will contain a pseudo-random value.
-pub fn decrypt_message(ss: &mut [u8], ct: &[u8], sk: &[u8]) {
+pub fn decrypt_message(ss: &mut [u8], ct: &[u8], sk: SecretKey) {
     let mut buf = [0u8; 2 * KYBER_SYM_BYTES];
     let mut kr = [0u8; 2 * KYBER_SYM_BYTES];
     let mut cmp = [0u8; KYBER_CIPHERTEXT_BYTES];
@@ -122,7 +127,17 @@ pub fn decrypt_message(ss: &mut [u8], ct: &[u8], sk: &[u8]) {
             [..KYBER_INDCPA_PUBLIC_KEY_BYTES],
     );
 
-    indcpa_dec(&mut buf, ct, sk);
+    // indcpa_dec(&mut buf, ct, sk);
+
+    let decrypted = match sealedbox::open(ct, &PublicKey::from_slice(&pk).unwrap(), &sodiumoxide::crypto::box_::SecretKey::from_slice(&sk[..KYBER_INDCPA_SECRET_KEY_BYTES]).unwrap()) {
+        Ok(decrypted) => decrypted,
+        Err(_) => {
+            // If decryption fails, fill ss with random bytes
+            randombytes(ss, KYBER_SHARED_SECRET_BYTES, &mut rand::thread_rng());
+            return;
+        }
+    };
+    buf.copy_from_slice(&decrypted);
 
     // Multitarget countermeasure for coins + contributory KEM
     const START: usize = KYBER_SECRET_KEY_BYTES - 2 * KYBER_SYM_BYTES;
